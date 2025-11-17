@@ -14,7 +14,7 @@ const route = useRoute()
               d="M10 2a8 8 0 100 16 8 8 0 000-16zM7 10a3 3 0 106 0 3 3 0 00-6 0z"
             />
           </svg>
-          <h1 class="text-2xl font-bold text-white">Weather & Air Quality</h1>
+          <h1 class="text-2xl font-bold text-white">Vayumitr</h1>
         </RouterLink>
         <nav class="flex gap-6">
           <RouterLink

@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { ref } from 'vue'
+import { ref, nextTick } from 'vue'
 import SearchBar from '@/components/SearchBar.vue'
 import WeatherCard from '@/components/WeatherCard.vue'
 import AirQualityPanel from '@/components/AirQualityPanel.vue'
@@ -11,6 +11,7 @@ const weather = ref<WeatherData | null>(null)
 const airQuality = ref<AirQualityData | null>(null)
 const isLoading = ref(false)
 const error = ref('')
+const weatherSection = ref<HTMLElement | null>(null)
 
 const searchCity = async (city: string) => {
   isLoading.value = true
@@ -22,6 +23,10 @@ const searchCity = async (city: string) => {
 
     const airQualityData = await getAirQuality(weatherData.coord.lat, weatherData.coord.lon)
     airQuality.value = airQualityData
+
+    // Scroll the weather section into view after data is set
+    await nextTick()
+    weatherSection.value?.scrollIntoView({ behavior: 'smooth', block: 'start' })
   } catch (err) {
     error.value = 'Failed to fetch weather and air quality data. Please try again.'
     console.error(err)
@@ -41,6 +46,10 @@ const selectLocationFromMap = async (lat: number, lon: number) => {
 
     const airQualityData = await getAirQuality(weatherData.coord.lat, weatherData.coord.lon)
     airQuality.value = airQualityData
+
+    // After selecting a location, scroll to the weather section
+    await nextTick()
+    weatherSection.value?.scrollIntoView({ behavior: 'smooth', block: 'start' })
   } catch (err) {
     error.value = 'Failed to fetch weather for selected location. Please try searching instead.'
     console.error(err)
@@ -60,6 +69,9 @@ const initializeApp = async () => {
           weather.value = weatherData
           const airQualityData = await getAirQuality(weatherData.coord.lat, weatherData.coord.lon)
           airQuality.value = airQualityData
+
+          await nextTick()
+          weatherSection.value?.scrollIntoView({ behavior: 'smooth', block: 'start' })
         } catch (err) {
           console.error('Error initializing app:', err)
           // fallback to London
@@ -82,13 +94,15 @@ initializeApp()
 
 <template>
   <div class="space-y-8">
-    <SearchBar @search="searchCity" />
+    <SearchBar @search="searchCity" @searchCoords="selectLocationFromMap" />
 
     <div v-if="error" class="bg-red-900 border border-red-700 text-red-200 px-4 py-3 rounded-lg">
       {{ error }}
     </div>
 
-    <WeatherCard :weather="weather" :isLoading="isLoading" />
+    <div ref="weatherSection">
+      <WeatherCard :weather="weather" :isLoading="isLoading" />
+    </div>
 
     <div v-if="weather" class="space-y-8">
       <!-- Interactive Map -->
@@ -98,6 +112,7 @@ initializeApp()
           :lat="weather.coord.lat"
           :lon="weather.coord.lon"
           :cityName="weather.name"
+          :isLoading="isLoading"
           @selectLocation="selectLocationFromMap"
         />
       </div>

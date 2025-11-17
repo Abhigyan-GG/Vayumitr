@@ -113,6 +113,25 @@ export async function getAirQualityForecast(lat: number, lon: number): Promise<A
   return response.json()
 }
 
+export interface GeocodeResult {
+  name: string
+  lat: number
+  lon: number
+  country: string
+  state?: string
+}
+
+export async function getCitySuggestions(query: string, limit = 5): Promise<GeocodeResult[]> {
+  if (!query) return []
+  const response = await fetch(
+    `${BASE_URL}/geo/1.0/direct?q=${encodeURIComponent(query)}&limit=${limit}&appid=${API_KEY}`
+  )
+  if (!response.ok) {
+    throw new Error(`Geocoding API error: ${response.status}`)
+  }
+  return response.json()
+}
+
 export function formatTime(unixTime: number): string {
   const date = new Date(unixTime * 1000)
   return date.toLocaleString('en-US', { month: 'short', day: 'numeric', hour: '2-digit', minute: '2-digit' })

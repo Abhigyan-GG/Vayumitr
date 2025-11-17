@@ -6,6 +6,7 @@ interface Props {
   lat: number
   lon: number
   cityName: string
+  isLoading?: boolean
 }
 
 const emit = defineEmits<{
@@ -93,7 +94,7 @@ watch(
       <p class="text-gray-300">
         <span class="font-semibold">Selected Coordinates:</span> {{ selectedCoords }}
       </p>
-      <p class="text-sm text-gray-400 mt-2">Fetching weather for this location...</p>
+      <p v-if="props.isLoading" class="text-sm text-gray-400 mt-2">Fetching weather for this location...</p>
     </div>
   </div>
 </template>
