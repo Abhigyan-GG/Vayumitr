@@ -1,5 +1,15 @@
-const API_KEY = '0c20c5cef45cf7bf2bb58fe83972ec8a'
-const BASE_URL = 'https://api.openweathermap.org'
+// Read API configuration from Vite environment variables. These should be defined
+// in your local `.env` (for development) or in your deployment environment.
+const API_KEY = (import.meta.env.VITE_OPENWEATHER_API_KEY as string) || ''
+const BASE_URL = (import.meta.env.VITE_OPENWEATHER_BASE_URL as string) || 'https://api.openweathermap.org'
+
+if (!API_KEY) {
+  // Warn during development if the key is missing — calls will fail without it.
+  // Do not throw here so the app can still load for non-API parts.
+  // Replace with runtime error handling if you prefer stricter behavior.
+  // eslint-disable-next-line no-console
+  console.warn('VITE_OPENWEATHER_API_KEY is not set. API requests will fail.')
+}
 
 export interface WeatherData {
   name: string

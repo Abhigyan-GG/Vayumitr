@@ -5,7 +5,7 @@ import WeatherCard from '@/components/WeatherCard.vue'
 import AirQualityPanel from '@/components/AirQualityPanel.vue'
 import Map from '@/components/Map.vue'
 import RunRecommendation from '@/components/RunRecommendation.vue'
-import { getWeatherByCityName, getAirQuality, getAirQualityForecast, type WeatherData, type AirQualityData } from '@/services/openWeatherApi'
+import { getWeatherByCityName, getWeatherByCoords, getAirQuality, getAirQualityForecast, type WeatherData, type AirQualityData } from '@/services/openWeatherApi'
 
 const weather = ref<WeatherData | null>(null)
 const airQuality = ref<AirQualityData | null>(null)
@@ -35,14 +35,8 @@ const selectLocationFromMap = async (lat: number, lon: number) => {
   error.value = ''
 
   try {
-    // Use reverse geocoding to get city name from coordinates
-    const response = await fetch(
-      `https://nominatim.openstreetmap.org/reverse?format=json&lat=${lat}&lon=${lon}`,
-    )
-    const data = await response.json()
-    const cityName = data.address?.city || data.address?.town || data.address?.county || 'Selected Location'
-
-    const weatherData = await getWeatherByCityName(cityName)
+    // Query weather by coordinates (more reliable than reverse geocoding -> city name)
+    const weatherData = await getWeatherByCoords(lat, lon)
     weather.value = weatherData
 
     const airQualityData = await getAirQuality(weatherData.coord.lat, weatherData.coord.lon)
@@ -62,12 +56,14 @@ const initializeApp = async () => {
         try {
           isLoading.value = true
           const { latitude, longitude } = position.coords
-          const weatherData = await getWeatherByCityName('London')
+          const weatherData = await getWeatherByCoords(latitude, longitude)
           weather.value = weatherData
           const airQualityData = await getAirQuality(weatherData.coord.lat, weatherData.coord.lon)
           airQuality.value = airQualityData
         } catch (err) {
           console.error('Error initializing app:', err)
+          // fallback to London
+          await searchCity('London')
         } finally {
           isLoading.value = false
         }
