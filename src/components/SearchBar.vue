@@ -4,7 +4,7 @@ import { getCitySuggestions, type GeocodeResult } from '@/services/openWeatherAp
 
 const emit = defineEmits<{
   search: [city: string]
-  searchCoords: [{ lat: number; lon: number }]
+  searchCoords: [lat: number, lon: number]
 }>()
 
 const city = ref('')
@@ -23,6 +23,9 @@ const fetchSuggestions = (q: string) => {
     try {
       const results = await getCitySuggestions(q, 6)
       suggestions.value = results
+      // Debug: show suggestions count
+      // eslint-disable-next-line no-console
+      console.debug('[search] fetchSuggestions', { query: q, count: results?.length ?? 0 })
     } catch (err) {
       // eslint-disable-next-line no-console
       console.error('Error fetching suggestions', err)
@@ -31,8 +34,8 @@ const fetchSuggestions = (q: string) => {
   }, 300)
 }
 
-const handleSearch = (value?: string) => {
-  const q = (value ?? city.value).trim()
+const handleSearch = (value?: string | Event) => {
+  const q = (typeof value === 'string' ? value : city.value).trim()
   if (q) {
     isLoading.value = true
     emit('search', q)
@@ -52,7 +55,11 @@ const handleKeydown = (e: KeyboardEvent) => {
 
 const selectSuggestion = (s: GeocodeResult) => {
   // Emit coordinates directly so parent can perform a deterministic lookup
-  emit('searchCoords', { lat: s.lat, lon: s.lon })
+  // Debug: selected suggestion
+  // eslint-disable-next-line no-console
+  console.debug('[search] selectSuggestion', s)
+  // Emit lat and lon as separate args to match Map.vue -> selectLocation handler
+  emit('searchCoords', s.lat, s.lon)
   city.value = ''
   suggestions.value = []
 }
@@ -64,12 +71,12 @@ const handleBlur = () => {
 </script>
 
 <template>
-  <div class="w-full max-w-2xl mx-auto mb-8">
+  <div class="w-full max-w-2xl mx-auto mb-8 relative">
     <div class="flex gap-2">
       <div class="relative flex-1">
         <input
           v-model="city"
-          @input="(e) => fetchSuggestions(city.value)"
+          @input="(e) => fetchSuggestions((e.target as HTMLInputElement).value)"
           @blur="handleBlur"
           type="text"
           placeholder="Search for a city..."
@@ -78,7 +85,7 @@ const handleBlur = () => {
           :disabled="isLoading"
         />
 
-        <ul v-if="suggestions.length" class="absolute z-50 left-0 right-0 mt-2 bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded shadow-lg max-h-60 overflow-auto">
+        <ul v-if="suggestions.length" class="absolute z-50 left-0 right-0 top-full mt-2 bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded shadow-lg max-h-60 overflow-auto">
           <li v-for="(s, idx) in suggestions" :key="idx" class="px-3 py-2 hover:bg-gray-100 dark:hover:bg-gray-700 cursor-pointer" @click="selectSuggestion(s)">
             <div class="text-sm text-gray-900 dark:text-gray-100">{{ s.name }}<span v-if="s.state">, {{ s.state }}</span>, {{ s.country }}</div>
             <div class="text-xs text-gray-500 dark:text-gray-400">Lat: {{ s.lat.toFixed(2) }}, Lon: {{ s.lon.toFixed(2) }}</div>

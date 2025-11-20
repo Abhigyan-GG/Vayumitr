@@ -11,6 +11,9 @@ if (!API_KEY) {
   console.warn('VITE_OPENWEATHER_API_KEY is not set. API requests will fail.')
 }
 
+// Allow a separate key for geocoding/nearby-cities if provided; fall back to the main API key
+const NEARBY_KEY = (import.meta.env.VITE_NEARBY_CITIES_KEY as string) || API_KEY
+
 export interface WeatherData {
   name: string
   sys: {
@@ -113,6 +116,8 @@ export async function getAirQualityForecast(lat: number, lon: number): Promise<A
   return response.json()
 }
 
+import type { NearbyCity } from './nearbyCities'
+
 export interface GeocodeResult {
   name: string
   lat: number
@@ -123,13 +128,34 @@ export interface GeocodeResult {
 
 export async function getCitySuggestions(query: string, limit = 5): Promise<GeocodeResult[]> {
   if (!query) return []
-  const response = await fetch(
-    `${BASE_URL}/geo/1.0/direct?q=${encodeURIComponent(query)}&limit=${limit}&appid=${API_KEY}`
-  )
-  if (!response.ok) {
-    throw new Error(`Geocoding API error: ${response.status}`)
+  try {
+    const response = await fetch(
+      `${BASE_URL}/geo/1.0/direct?q=${encodeURIComponent(query)}&limit=${limit}&appid=${NEARBY_KEY}`
+    )
+    if (response.ok) {
+      const data = await response.json()
+      if (Array.isArray(data) && data.length) {
+        // Debug: indicate we got results from OpenWeather geocoding
+        // eslint-disable-next-line no-console
+        console.debug('[geocode] API results', { query, count: data.length })
+        return data
+      }
+    }
+  } catch (err) {
+    // fall through to local fallback
   }
-  return response.json()
+
+  // Fallback: use local nearby cities database to return coarse suggestions
+  try {
+    const local = await import('./nearbyCities')
+    const found: NearbyCity[] = local.findCitiesByName(query, limit)
+    // Debug: indicate we used local fallback
+    // eslint-disable-next-line no-console
+    console.debug('[geocode] fallback local results', { query, count: found.length })
+    return found.map((c) => ({ name: c.name, lat: c.lat, lon: c.lon, country: c.country }))
+  } catch (err) {
+    return []
+  }
 }
 
 export function formatTime(unixTime: number): string {

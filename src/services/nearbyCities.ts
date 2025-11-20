@@ -80,3 +80,19 @@ export function getRandomNearbyCities(cityName: string, lat: number, lon: number
   // Shuffle and return requested count
   return nearby.sort(() => Math.random() - 0.5).slice(0, count)
 }
+
+// Simple local search helper used as a fallback for suggestions.
+export function findCitiesByName(query: string, limit: number = 5): NearbyCity[] {
+  const q = query.toLowerCase()
+  const results: NearbyCity[] = []
+
+  for (const key of Object.keys(citiesDatabase)) {
+    const cityName = key.split(',')[0].toLowerCase()
+    if (cityName.includes(q) || q.includes(cityName)) {
+      results.push(...citiesDatabase[key])
+    }
+    if (results.length >= limit) break
+  }
+
+  return results.slice(0, limit)
+}
