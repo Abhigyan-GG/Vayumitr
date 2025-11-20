@@ -1,6 +1,6 @@
 <script setup lang="ts">
 import { ref, watch, onMounted } from 'vue'
-import L from 'leaflet'
+import * as L from 'leaflet'
 
 interface Props {
   lat: number
@@ -45,7 +45,7 @@ onMounted(() => {
   })
 
   // Add help text
-  const helpText = L.control({ position: 'topleft' })
+  const helpText = (L.control as any)({ position: 'topleft' })
   helpText.onAdd = () => {
     const div = L.DomUtil.create('div', 'bg-gray-800 text-white p-3 rounded text-sm border border-gray-700')
     div.innerHTML = '<strong>💡 Click on map</strong> to select a location'
