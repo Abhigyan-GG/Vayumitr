@@ -3,7 +3,7 @@ import { computed } from 'vue'
 import type { AirQualityData } from '@/services/openWeatherApi'
 import { getAirQuality } from '@/services/openWeatherApi'
 import { analyzeForRunning, findBestTimeToRun, getRunningIntensityAdvice } from '@/services/runRecommendation'
-import { getRandomNearbyCities } from '@/services/nearbyCities'
+import type { NearbyCity } from '@/services/nearbyCities'
 
 interface Props {
   airQuality: AirQualityData | null
@@ -31,10 +31,27 @@ const intensityAdvice = computed(() => {
   return getRunningIntensityAdvice(props.airQuality)
 })
 
-const nearbyCities = computed(() => {
-  if (!props.airQuality) return []
-  return getRandomNearbyCities(props.cityName, props.lat, props.lon, 3)
-})
+import { ref, watch } from 'vue'
+
+const nearbyCities = ref<NearbyCity[]>([])
+
+watch(
+  () => [props.airQuality, props.cityName, props.lat, props.lon],
+  async () => {
+    if (!props.airQuality) {
+      nearbyCities.value = []
+      return
+    }
+    try {
+      const mod = await import('@/services/nearbyCities')
+      nearbyCities.value = mod.getRandomNearbyCities(props.cityName, props.lat, props.lon, 3)
+    } catch (err) {
+      // fallback to empty
+      nearbyCities.value = []
+    }
+  },
+  { immediate: true }
+)
 
 const selectNearbyCity = async (cityName: string, lat: number, lon: number) => {
   emit('selectCity', cityName, lat, lon)

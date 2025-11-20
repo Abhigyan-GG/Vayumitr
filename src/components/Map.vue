@@ -44,14 +44,20 @@ onMounted(() => {
     emit('selectLocation', lat, lng)
   })
 
-  // Add help text
-  const helpText = (L.control as any)({ position: 'topleft' })
-  helpText.onAdd = () => {
-    const div = L.DomUtil.create('div', 'bg-gray-800 text-white p-3 rounded text-sm border border-gray-700')
-    div.innerHTML = '<strong>💡 Click on map</strong> to select a location'
-    return div
+  // Add help text (avoid calling Leaflet control factory to keep TypeScript happy on CI)
+  try {
+    const container = map.getContainer()
+    const helpDiv = document.createElement('div')
+    helpDiv.className = 'bg-gray-800 text-white p-3 rounded text-sm border border-gray-700'
+    helpDiv.style.position = 'absolute'
+    helpDiv.style.top = '10px'
+    helpDiv.style.left = '10px'
+    helpDiv.style.zIndex = '1000'
+    helpDiv.innerHTML = '<strong>💡 Click on map</strong> to select a location'
+    container.appendChild(helpDiv)
+  } catch (err) {
+    // silently ignore if DOM not available
   }
-  helpText.addTo(map)
 })
 
 const updateMarker = (lat: number, lon: number, name: string) => {
